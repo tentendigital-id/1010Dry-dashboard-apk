@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mContext: Context
     internal var mLoaded = false
     internal var URL = "https://dashboard.1010dry.id/"
+    var REFERER = ""
 
     internal var doubleBackToExitPressedOnce = false
     var filePath: ValueCallback<Array<Uri>>? = null;
@@ -129,9 +130,10 @@ class MainActivity : AppCompatActivity() {
             downloadFile(url!!, cookieString)
         }
         mWebView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, url: String?): Boolean {
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
 
-                Log.d("101010 overide", url!!)
+                val url = request!!.url.toString()
+                Log.d("101010 overide", url)
 
                 if (internetCheck(mContext)) {
                     //view.loadUrl(url)
@@ -141,7 +143,10 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     if (url.contains("1010dry.id")) {
-                        view.loadUrl(url)
+                        val extraHeaders: MutableMap<String, String> = HashMap()
+                        extraHeaders["Referer"] = REFERER
+                        view?.loadUrl(url, extraHeaders)
+                        REFERER = url
                         return false
                     }else {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
