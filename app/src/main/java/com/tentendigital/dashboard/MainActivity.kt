@@ -29,21 +29,19 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
-import java.io.File
-import android.webkit.MimeTypeMap
+import java.net.CookieHandler
+import java.net.CookiePolicy
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.math.log
 
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mContext: Context
     internal var mLoaded = false
     internal var URL = "https://dashboard.1010dry.id/"
-    var REFERER = ""
 
     internal var doubleBackToExitPressedOnce = false
-    var filePath: ValueCallback<Array<Uri>>? = null;
+    var filePath: ValueCallback<Array<Uri>>? = null
 
     private lateinit var btnTryAgain: Button
     private lateinit var mWebView: WebView
@@ -66,6 +64,15 @@ class MainActivity : AppCompatActivity() {
         layoutWebview = findViewById<View>(R.id.layout_webview) as RelativeLayout
         layoutNoInternet = findViewById<View>(R.id.layout_no_internet) as RelativeLayout
         layoutSplash = findViewById<View>(R.id.layout_splash) as ConstraintLayout
+
+        val cookieManager = CookieManager.getInstance()
+        CookieManager.setAcceptFileSchemeCookies(true)
+        cookieManager.setAcceptCookie(true)
+        cookieManager.setAcceptThirdPartyCookies(mWebView, true)
+
+        val manager = java.net.CookieManager()
+        manager.setCookiePolicy(CookiePolicy.ACCEPT_ALL)
+        CookieHandler.setDefault(manager)
 
         requestForWebview()
         hasWriteStoragePermission()
@@ -97,7 +104,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private fun requestWebView() {
         if (internetCheck(mContext)) {
             mWebView.visibility = View.VISIBLE
@@ -113,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         mWebView.isFocusable = true
         mWebView.isFocusableInTouchMode = true
         mWebView.settings.javaScriptEnabled = true
+        mWebView.settings.setGeolocationEnabled(true)
         mWebView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         mWebView.settings.setRenderPriority(RenderPriority.HIGH)
         mWebView.settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -121,8 +128,7 @@ class MainActivity : AppCompatActivity() {
         mWebView.settings.domStorageEnabled = true
         mWebView.settings.setAppCacheEnabled(true)
         mWebView.settings.databaseEnabled = true
-        //mWebView.getSettings().setDatabasePath(
-        //        this.getFilesDir().getPath() + this.getPackageName() + "/databases/");
+        mWebView.settings.allowContentAccess = true
 
         mWebView.settings.setSupportMultipleWindows(false)
         mWebView.setDownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
@@ -130,23 +136,16 @@ class MainActivity : AppCompatActivity() {
             downloadFile(url!!, cookieString)
         }
         mWebView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
 
-                val url = request!!.url.toString()
-                Log.d("101010 overide", url)
-
+                Log.d("101010 overide", url!!)
                 if (internetCheck(mContext)) {
-                    //view.loadUrl(url)
                     if (url.contains("dashboard.1010dry.id/user/logout")){
                         WebStorage.getInstance().deleteAllData()
                         CookieManager.getInstance().removeAllCookies {}
                     }
 
                     if (url.contains("1010dry.id")) {
-                        val extraHeaders: MutableMap<String, String> = HashMap()
-                        extraHeaders["Referer"] = REFERER
-                        view?.loadUrl(url, extraHeaders)
-                        REFERER = url
                         return false
                     }else {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
@@ -168,22 +167,16 @@ class MainActivity : AppCompatActivity() {
                 if (prgs.visibility == View.GONE) {
                     prgs.visibility = View.VISIBLE
                 }
-
                 Log.d("101010 started", url)
             }
 
-            override fun onLoadResource(view: WebView, url: String) {
-                super.onLoadResource(view, url)
-            }
-
-            override fun onPageFinished(view: WebView, url: String) {
+            override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
                 mLoaded = true
                 if (prgs.visibility == View.VISIBLE)
                     prgs.visibility = View.GONE
 
-                Log.d("101010 finished", url)
-
+                Log.d("101010 finished", url!!)
                 Handler().postDelayed({
                     layoutSplash.visibility = View.GONE
                 }, 2000)
@@ -267,7 +260,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        request.addRequestHeader("cookie", cookieString);
+        request.addRequestHeader("cookie", cookieString)
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
         request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
 
