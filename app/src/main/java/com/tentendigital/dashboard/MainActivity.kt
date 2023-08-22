@@ -95,12 +95,18 @@ class MainActivity : AppCompatActivity() {
             }, 3000)
 
         } else {
-            mWebView.visibility = View.VISIBLE
-            prgs.visibility = View.GONE
-            layoutSplash.visibility = View.GONE
-            layoutNoInternet.visibility = View.GONE
+            if (internetCheck(mContext)) {
+                mWebView.visibility = View.VISIBLE
+                prgs.visibility = View.GONE
+                layoutSplash.visibility = View.GONE
+                layoutNoInternet.visibility = View.GONE
+            }else{
+                prgs.visibility = View.GONE
+                mWebView.visibility = View.GONE
+                layoutSplash.visibility = View.GONE
+                layoutNoInternet.visibility = View.VISIBLE
+            }
         }
-
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -126,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         mWebView.settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
 
         mWebView.settings.domStorageEnabled = true
-        mWebView.settings.setAppCacheEnabled(true)
+        //mWebView.settings.setAppCacheEnabled(true)
         mWebView.settings.databaseEnabled = true
         mWebView.settings.allowContentAccess = true
 
@@ -166,6 +172,12 @@ class MainActivity : AppCompatActivity() {
                 super.onPageStarted(view, url, favicon)
                 if (prgs.visibility == View.GONE) {
                     prgs.visibility = View.VISIBLE
+                }
+                if (internetCheck(mContext) == false) {
+                    prgs.visibility = View.GONE
+                    mWebView.visibility = View.GONE
+                    layoutSplash.visibility = View.GONE
+                    layoutNoInternet.visibility = View.VISIBLE
                 }
                 Log.d("101010 started", url)
             }
